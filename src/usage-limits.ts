@@ -1,4 +1,5 @@
 import { getBlockingRateLimitResetAt, hasMeaningfulRateLimits } from './rate-limits.js'
+import { buildUsageRequestHeaders, isCloudflareWafResponse } from './fingerprint.js'
 import type { AccountCredentials, AccountRateLimits, RateLimitWindow } from './types.js'
 
 const DEFAULT_USAGE_BASE_URL = 'https://chatgpt.com/backend-api'
@@ -122,13 +123,18 @@ function parseUsageFailure(rawText: string): { code?: string; message?: string }
 
 export function classifyUsageApiFailure(
   status: number,
-  rawText: string
+  rawText: string,
+  contentType?: string | null
 ): UsageApiFailureClassification {
   const { code, message } = parseUsageFailure(rawText)
   const normalized = [code, message, rawText.trim()]
     .filter(Boolean)
     .join(' ')
     .toLowerCase()
+
+  if (isCloudflareWafResponse(status, rawText, contentType)) {
+    return { shouldProbeFallback: true }
+  }
 
   if (status === 401 || status === 403) {
     return {
@@ -166,13 +172,10 @@ export async function fetchUsageRateLimitsForAccount(
   }
 
   const url = `${getUsageBaseUrl()}/wham/usage`
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${token}`,
-    'User-Agent': 'codex-cli'
-  }
-  if (account.accountId) {
-    headers['ChatGPT-Account-Id'] = account.accountId
-  }
+  const headers = buildUsageRequestHeaders({
+    ...account,
+    accessToken: token
+  })
 
   let res: Response
   try {
@@ -193,7 +196,11 @@ export async function fetchUsageRateLimitsForAccount(
 
   if (!res.ok) {
     const trimmed = rawText.trim()
-    const classification = classifyUsageApiFailure(res.status, rawText)
+    const classification = classifyUsageApiFailure(
+      res.status,
+      rawText,
+      res.headers.get('content-type')
+    )
     return {
       source: 'usage-api',
       error: `Usage API returned ${res.status}${trimmed ? `: ${trimmed.slice(0, 280)}` : ''}`,

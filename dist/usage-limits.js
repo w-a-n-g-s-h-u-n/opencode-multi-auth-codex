@@ -1,4 +1,5 @@
 import { getBlockingRateLimitResetAt, hasMeaningfulRateLimits } from './rate-limits.js';
+import { buildUsageRequestHeaders, isCloudflareWafResponse } from './fingerprint.js';
 const DEFAULT_USAGE_BASE_URL = 'https://chatgpt.com/backend-api';
 const USAGE_BASE_URL_ENV = 'OPENCODE_MULTI_AUTH_USAGE_BASE_URL';
 function getUsageBaseUrl() {
@@ -59,12 +60,15 @@ function parseUsageFailure(rawText) {
         return { message: trimmed };
     }
 }
-export function classifyUsageApiFailure(status, rawText) {
+export function classifyUsageApiFailure(status, rawText, contentType) {
     const { code, message } = parseUsageFailure(rawText);
     const normalized = [code, message, rawText.trim()]
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
+    if (isCloudflareWafResponse(status, rawText, contentType)) {
+        return { shouldProbeFallback: true };
+    }
     if (status === 401 || status === 403) {
         return {
             shouldProbeFallback: false,
@@ -91,13 +95,10 @@ export async function fetchUsageRateLimitsForAccount(account) {
         };
     }
     const url = `${getUsageBaseUrl()}/wham/usage`;
-    const headers = {
-        Authorization: `Bearer ${token}`,
-        'User-Agent': 'codex-cli'
-    };
-    if (account.accountId) {
-        headers['ChatGPT-Account-Id'] = account.accountId;
-    }
+    const headers = buildUsageRequestHeaders({
+        ...account,
+        accessToken: token
+    });
     let res;
     try {
         res = await fetch(url, { method: 'GET', headers });
@@ -117,7 +118,7 @@ export async function fetchUsageRateLimitsForAccount(account) {
     }
     if (!res.ok) {
         const trimmed = rawText.trim();
-        const classification = classifyUsageApiFailure(res.status, rawText);
+        const classification = classifyUsageApiFailure(res.status, rawText, res.headers.get('content-type'));
         return {
             source: 'usage-api',
             error: `Usage API returned ${res.status}${trimmed ? `: ${trimmed.slice(0, 280)}` : ''}`,

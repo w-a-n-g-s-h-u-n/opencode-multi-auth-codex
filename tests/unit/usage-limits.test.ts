@@ -36,4 +36,16 @@ describe('usage API failure classification', () => {
       workspaceDeactivatedReason: 'Workspace is deactivated'
     })
   })
+
+  it('treats Cloudflare WAF HTML blocks as probe-fallback cases', () => {
+    const result = classifyUsageApiFailure(
+      403,
+      '<html><body>Attention Required! | Cloudflare</body></html>',
+      'text/html; charset=UTF-8'
+    )
+
+    expect(result).toEqual({
+      shouldProbeFallback: true
+    })
+  })
 })
