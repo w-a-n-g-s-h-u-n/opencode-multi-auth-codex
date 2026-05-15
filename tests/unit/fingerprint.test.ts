@@ -12,21 +12,21 @@ describe('usage fingerprint simulation', () => {
     process.env = originalEnv
   })
 
-  it('builds browser-like headers for usage requests', () => {
+  it('builds Codex-native headers for usage requests', () => {
     const headers = buildUsageRequestHeaders({
       alias: 'personal',
       accessToken: 'token-123',
       refreshToken: 'refresh-123',
+      accountId: 'acct-123',
       expiresAt: Date.now() + 60_000,
       usageCount: 0
     })
 
     expect(headers.Authorization).toBe('Bearer token-123')
-    expect(headers['User-Agent']).not.toBe('codex-cli')
-    expect(headers['Sec-CH-UA']).toBeDefined()
-    expect(headers['Sec-Fetch-Mode']).toBe('cors')
-    expect(headers.Origin).toBe('https://chatgpt.com')
-    expect(headers.Referer).toBe('https://chatgpt.com/')
+    expect(headers.originator).toBe('codex_cli_rs')
+    expect(headers['User-Agent']).toContain('codex_cli_rs/')
+    expect(headers['x-openai-client-user-agent']).toContain('"platform":"cli"')
+    expect(headers['ChatGPT-Account-ID']).toBe('acct-123')
   })
 
   it('falls back to the plain request shape when simulation is disabled', () => {
@@ -36,13 +36,17 @@ describe('usage fingerprint simulation', () => {
       alias: 'personal',
       accessToken: 'token-123',
       refreshToken: 'refresh-123',
+      accountId: 'acct-123',
       expiresAt: Date.now() + 60_000,
       usageCount: 0
     })
 
     expect(headers).toEqual({
       Authorization: 'Bearer token-123',
-      'User-Agent': 'codex-cli'
+      originator: 'codex_cli_rs',
+      'User-Agent': 'codex_cli_rs/1.2.0',
+      Accept: 'application/json, text/plain, */*',
+      'ChatGPT-Account-ID': 'acct-123'
     })
   })
 

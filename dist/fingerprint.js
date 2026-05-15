@@ -1,92 +1,61 @@
-import * as crypto from 'node:crypto';
-const DEFAULT_ORIGIN = 'https://chatgpt.com';
-const DEFAULT_REFERER = `${DEFAULT_ORIGIN}/`;
+import * as os from 'node:os';
+const DEFAULT_ORIGINATOR = 'codex_cli_rs';
 const DISABLE_ENV = 'OPENCODE_MULTI_AUTH_DISABLE_USAGE_FINGERPRINT_SIMULATION';
-// Keep these profiles aligned with a recent stable browser baseline and refresh them when
-// the upstream request shape changes.
-const FINGERPRINTS = [
-    {
-        userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        acceptLanguage: 'en-US,en;q=0.9',
-        secChUa: '"Chromium";v="124", "Google Chrome";v="124", ";Not A Brand";v="99"',
-        secChUaMobile: '?0',
-        secChUaPlatform: '"Windows"',
-        secFetchSite: 'same-site',
-        secFetchMode: 'cors',
-        secFetchDest: 'empty',
-        dnt: '1'
-    },
-    {
-        userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        acceptLanguage: 'en-US,en;q=0.8',
-        secChUa: '"Chromium";v="124", "Google Chrome";v="124", "Not A(Brand)";v="99"',
-        secChUaMobile: '?0',
-        secChUaPlatform: '"macOS"',
-        secFetchSite: 'same-site',
-        secFetchMode: 'cors',
-        secFetchDest: 'empty',
-        dnt: '1'
-    },
-    {
-        userAgent: 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-        acceptLanguage: 'en-US,en;q=0.9',
-        secChUa: '"Chromium";v="124", "Google Chrome";v="124", "Not.A/Brand";v="8"',
-        secChUaMobile: '?0',
-        secChUaPlatform: '"Linux"',
-        secFetchSite: 'same-site',
-        secFetchMode: 'cors',
-        secFetchDest: 'empty',
-        dnt: '1'
-    }
-];
+const PACKAGE_VERSION = process.env.npm_package_version || '1.2.0';
 function shouldDisableSimulation() {
     const raw = process.env[DISABLE_ENV]?.trim().toLowerCase();
     return raw === '1' || raw === 'true' || raw === 'yes';
 }
-function fingerprintSeed(account) {
-    return [
-        account.alias,
-        account.accountId,
-        account.accountUserId,
-        account.userId,
-        account.email,
-        account.accessToken?.slice(0, 16)
-    ]
-        .filter(Boolean)
-        .join(':');
+function getPlatformLabel() {
+    switch (os.platform()) {
+        case 'win32':
+            return `Windows ${os.release()}`;
+        case 'darwin':
+            return `macOS ${os.release()}`;
+        default:
+            return `Linux ${os.release()}`;
+    }
 }
-function pickFingerprint(account) {
-    const seed = fingerprintSeed(account) || account.alias;
-    const digest = crypto.createHash('sha256').update(seed).digest();
-    const index = digest.readUInt32BE(0) % FINGERPRINTS.length;
-    return FINGERPRINTS[index];
+function getTerminalToken() {
+    const program = process.env.TERM_PROGRAM?.trim();
+    if (!program)
+        return undefined;
+    const version = process.env.TERM_PROGRAM_VERSION?.trim();
+    return version ? `${program}/${version}` : program;
+}
+function buildFingerprint(account) {
+    const terminalToken = getTerminalToken();
+    const arch = os.arch();
+    const userAgent = `${DEFAULT_ORIGINATOR}/${PACKAGE_VERSION} (${getPlatformLabel()}; ${arch})${terminalToken ? ` ${terminalToken}` : ''}`;
+    const clientUserAgent = JSON.stringify({
+        platform: 'cli',
+        version: PACKAGE_VERSION,
+        lang: 'rust',
+        http_library: 'reqwest',
+        os: os.platform(),
+        arch,
+        account_id: account.accountId
+    });
+    return { userAgent, clientUserAgent };
 }
 export function buildUsageRequestHeaders(account) {
     const headers = {
         Authorization: `Bearer ${account.accessToken?.trim() || ''}`,
-        'User-Agent': 'codex-cli'
+        originator: DEFAULT_ORIGINATOR,
+        'User-Agent': `${DEFAULT_ORIGINATOR}/${PACKAGE_VERSION}`,
+        Accept: 'application/json, text/plain, */*'
     };
     if (account.accountId) {
-        headers['ChatGPT-Account-Id'] = account.accountId;
+        headers['ChatGPT-Account-ID'] = account.accountId;
     }
     if (shouldDisableSimulation()) {
         return headers;
     }
-    const fingerprint = pickFingerprint(account);
+    const fingerprint = buildFingerprint(account);
     return {
         ...headers,
-        Accept: 'application/json, text/plain, */*',
-        'Accept-Language': fingerprint.acceptLanguage,
-        Origin: DEFAULT_ORIGIN,
-        Referer: DEFAULT_REFERER,
-        'Sec-CH-UA': fingerprint.secChUa,
-        'Sec-CH-UA-Mobile': fingerprint.secChUaMobile,
-        'Sec-CH-UA-Platform': fingerprint.secChUaPlatform,
-        'Sec-Fetch-Dest': fingerprint.secFetchDest,
-        'Sec-Fetch-Mode': fingerprint.secFetchMode,
-        'Sec-Fetch-Site': fingerprint.secFetchSite,
         'User-Agent': fingerprint.userAgent,
-        DNT: fingerprint.dnt,
+        'x-openai-client-user-agent': fingerprint.clientUserAgent,
         Pragma: 'no-cache',
         'Cache-Control': 'no-cache'
     };

@@ -19,7 +19,7 @@ Multi-account OAuth rotation plugin for OpenCode with a local dashboard, force m
 - Supports force mode (pin one alias), account enable/disable, and re-auth.
 - Supports settings-driven rotation strategy (`round-robin`, `least-used`, `random`, `weighted-round-robin`).
 - Probes limits safely and keeps authoritative data quality rules.
-- Usage API requests use browser-like fingerprint headers to reduce Cloudflare WAF blocks; set `OPENCODE_MULTI_AUTH_DISABLE_USAGE_FINGERPRINT_SIMULATION=1` to turn that off.
+- Usage API requests use a Codex-native fingerprint (`originator: codex_cli_rs`, native `User-Agent`, and `x-openai-client-user-agent`); set `OPENCODE_MULTI_AUTH_DISABLE_USAGE_FINGERPRINT_SIMULATION=1` to reduce the extra metadata.
 - Gates non-core Antigravity features behind a feature flag.
 
 ## Current implementation status

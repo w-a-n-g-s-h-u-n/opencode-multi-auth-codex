@@ -40,8 +40,7 @@ describe('usage API failure classification', () => {
   it('treats Cloudflare WAF HTML blocks as probe-fallback cases', () => {
     const result = classifyUsageApiFailure(
       403,
-      '<html><body>Attention Required! | Cloudflare</body></html>',
-      'text/html; charset=UTF-8'
+      '<html><body>Attention Required! | Cloudflare</body></html>'
     )
 
     expect(result).toEqual({

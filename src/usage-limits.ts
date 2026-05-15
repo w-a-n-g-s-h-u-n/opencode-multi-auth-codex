@@ -123,8 +123,7 @@ function parseUsageFailure(rawText: string): { code?: string; message?: string }
 
 export function classifyUsageApiFailure(
   status: number,
-  rawText: string,
-  contentType?: string | null
+  rawText: string
 ): UsageApiFailureClassification {
   const { code, message } = parseUsageFailure(rawText)
   const normalized = [code, message, rawText.trim()]
@@ -198,8 +197,7 @@ export async function fetchUsageRateLimitsForAccount(
     const trimmed = rawText.trim()
     const classification = classifyUsageApiFailure(
       res.status,
-      rawText,
-      res.headers.get('content-type')
+      rawText
     )
     return {
       source: 'usage-api',

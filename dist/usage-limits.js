@@ -60,7 +60,7 @@ function parseUsageFailure(rawText) {
         return { message: trimmed };
     }
 }
-export function classifyUsageApiFailure(status, rawText, contentType) {
+export function classifyUsageApiFailure(status, rawText) {
     const { code, message } = parseUsageFailure(rawText);
     const normalized = [code, message, rawText.trim()]
         .filter(Boolean)
@@ -118,7 +118,7 @@ export async function fetchUsageRateLimitsForAccount(account) {
     }
     if (!res.ok) {
         const trimmed = rawText.trim();
-        const classification = classifyUsageApiFailure(res.status, rawText, res.headers.get('content-type'));
+        const classification = classifyUsageApiFailure(res.status, rawText);
         return {
             source: 'usage-api',
             error: `Usage API returned ${res.status}${trimmed ? `: ${trimmed.slice(0, 280)}` : ''}`,

@@ -16,7 +16,7 @@ interface UsageApiFailureClassification {
     workspaceDeactivated?: boolean;
     workspaceDeactivatedReason?: string;
 }
-export declare function classifyUsageApiFailure(status: number, rawText: string, contentType?: string | null): UsageApiFailureClassification;
+export declare function classifyUsageApiFailure(status: number, rawText: string): UsageApiFailureClassification;
 export declare function fetchUsageRateLimitsForAccount(account: AccountCredentials): Promise<UsageRateLimitFetchResult>;
 export {};
 //# sourceMappingURL=usage-limits.d.ts.map
