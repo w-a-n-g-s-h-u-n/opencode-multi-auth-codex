@@ -91,9 +91,8 @@ export function buildUsageRequestHeaders(account) {
         'Cache-Control': 'no-cache'
     };
 }
-export function isCloudflareWafResponse(status, rawText, contentType) {
+export function isCloudflareWafResponse(status, rawText) {
     const normalized = rawText.toLowerCase();
-    void contentType;
     return ((status === 403 || status === 429 || status === 503) &&
         (normalized.includes('cloudflare') ||
             normalized.includes('waf') ||

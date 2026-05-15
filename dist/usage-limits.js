@@ -66,7 +66,7 @@ export function classifyUsageApiFailure(status, rawText, contentType) {
         .filter(Boolean)
         .join(' ')
         .toLowerCase();
-    if (isCloudflareWafResponse(status, rawText, contentType)) {
+    if (isCloudflareWafResponse(status, rawText)) {
         return { shouldProbeFallback: true };
     }
     if (status === 401 || status === 403) {

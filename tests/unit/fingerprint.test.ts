@@ -50,8 +50,7 @@ describe('usage fingerprint simulation', () => {
     expect(
       isCloudflareWafResponse(
         503,
-        '<html><body>Cloudflare challenge-platform blocked the request</body></html>',
-        'text/html; charset=utf-8'
+        '<html><body>Cloudflare challenge-platform blocked the request</body></html>'
       )
     ).toBe(true)
   })
@@ -60,8 +59,7 @@ describe('usage fingerprint simulation', () => {
     expect(
       isCloudflareWafResponse(
         403,
-        '<html><body>Forbidden</body></html>',
-        'text/html; charset=utf-8'
+        '<html><body>Forbidden</body></html>'
       )
     ).toBe(false)
   })
@@ -70,8 +68,7 @@ describe('usage fingerprint simulation', () => {
     expect(
       isCloudflareWafResponse(
         429,
-        '{"message":"Cloudflare challenge-platform blocked the request"}',
-        'application/json'
+        '{"message":"Cloudflare challenge-platform blocked the request"}'
       )
     ).toBe(true)
   })
@@ -80,8 +77,7 @@ describe('usage fingerprint simulation', () => {
     expect(
       isCloudflareWafResponse(
         401,
-        '<html><body>Cloudflare challenge</body></html>',
-        'text/html; charset=utf-8'
+        '<html><body>Cloudflare challenge</body></html>'
       )
     ).toBe(false)
   })

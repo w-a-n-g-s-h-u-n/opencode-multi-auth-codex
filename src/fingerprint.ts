@@ -117,9 +117,8 @@ export function buildUsageRequestHeaders(account: AccountCredentials): Record<st
   }
 }
 
-export function isCloudflareWafResponse(status: number, rawText: string, contentType?: string | null): boolean {
+export function isCloudflareWafResponse(status: number, rawText: string): boolean {
   const normalized = rawText.toLowerCase()
-  void contentType
   return (
     (status === 403 || status === 429 || status === 503) &&
     (

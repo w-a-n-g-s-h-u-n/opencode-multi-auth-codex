@@ -132,7 +132,7 @@ export function classifyUsageApiFailure(
     .join(' ')
     .toLowerCase()
 
-  if (isCloudflareWafResponse(status, rawText, contentType)) {
+  if (isCloudflareWafResponse(status, rawText)) {
     return { shouldProbeFallback: true }
   }
 
