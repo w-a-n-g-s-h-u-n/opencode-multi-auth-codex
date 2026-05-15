@@ -37,6 +37,7 @@ function buildFingerprint(account: AccountCredentials): CodexFingerprint {
   const terminalToken = getTerminalToken()
   const arch = os.arch()
   const userAgent = `${DEFAULT_ORIGINATOR}/${PACKAGE_VERSION} (${getPlatformLabel()}; ${arch})${terminalToken ? ` ${terminalToken}` : ''}`
+  // Mirror the native Codex CLI's Rust-origin client metadata rather than a browser profile.
   const clientUserAgent = JSON.stringify({
     platform: 'cli',
     version: PACKAGE_VERSION,
