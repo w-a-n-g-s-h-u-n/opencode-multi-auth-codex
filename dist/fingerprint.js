@@ -2,6 +2,8 @@ import * as crypto from 'node:crypto';
 const DEFAULT_ORIGIN = 'https://chatgpt.com';
 const DEFAULT_REFERER = `${DEFAULT_ORIGIN}/`;
 const DISABLE_ENV = 'OPENCODE_MULTI_AUTH_DISABLE_USAGE_FINGERPRINT_SIMULATION';
+// Keep these profiles aligned with a recent stable browser baseline and refresh them when
+// the upstream request shape changes.
 const FINGERPRINTS = [
     {
         userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -91,14 +93,13 @@ export function buildUsageRequestHeaders(account) {
 }
 export function isCloudflareWafResponse(status, rawText, contentType) {
     const normalized = rawText.toLowerCase();
-    const headerType = contentType?.toLowerCase() ?? '';
+    void contentType;
     return ((status === 403 || status === 429 || status === 503) &&
         (normalized.includes('cloudflare') ||
             normalized.includes('waf') ||
             normalized.includes('challenge-platform') ||
             normalized.includes('attention required') ||
             normalized.includes('verify you are human') ||
-            normalized.includes('cf-ray') ||
-            headerType.includes('text/html')));
+            normalized.includes('cf-ray')));
 }
 //# sourceMappingURL=fingerprint.js.map

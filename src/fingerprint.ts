@@ -17,6 +17,8 @@ const DEFAULT_ORIGIN = 'https://chatgpt.com'
 const DEFAULT_REFERER = `${DEFAULT_ORIGIN}/`
 const DISABLE_ENV = 'OPENCODE_MULTI_AUTH_DISABLE_USAGE_FINGERPRINT_SIMULATION'
 
+// Keep these profiles aligned with a recent stable browser baseline and refresh them when
+// the upstream request shape changes.
 const FINGERPRINTS: BrowserFingerprint[] = [
   {
     userAgent:
@@ -117,7 +119,7 @@ export function buildUsageRequestHeaders(account: AccountCredentials): Record<st
 
 export function isCloudflareWafResponse(status: number, rawText: string, contentType?: string | null): boolean {
   const normalized = rawText.toLowerCase()
-  const headerType = contentType?.toLowerCase() ?? ''
+  void contentType
   return (
     (status === 403 || status === 429 || status === 503) &&
     (
@@ -126,8 +128,7 @@ export function isCloudflareWafResponse(status: number, rawText: string, content
       normalized.includes('challenge-platform') ||
       normalized.includes('attention required') ||
       normalized.includes('verify you are human') ||
-      normalized.includes('cf-ray') ||
-      headerType.includes('text/html')
+      normalized.includes('cf-ray')
     )
   )
 }

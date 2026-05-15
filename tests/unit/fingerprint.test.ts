@@ -50,9 +50,39 @@ describe('usage fingerprint simulation', () => {
     expect(
       isCloudflareWafResponse(
         503,
-        '<html><body>Challenge Platform</body></html>',
+        '<html><body>Cloudflare challenge-platform blocked the request</body></html>',
         'text/html; charset=utf-8'
       )
     ).toBe(true)
+  })
+
+  it('does not treat generic HTML error pages as Cloudflare WAF blocks', () => {
+    expect(
+      isCloudflareWafResponse(
+        403,
+        '<html><body>Forbidden</body></html>',
+        'text/html; charset=utf-8'
+      )
+    ).toBe(false)
+  })
+
+  it('still detects Cloudflare text when the response is not HTML', () => {
+    expect(
+      isCloudflareWafResponse(
+        429,
+        '{"message":"Cloudflare challenge-platform blocked the request"}',
+        'application/json'
+      )
+    ).toBe(true)
+  })
+
+  it('ignores Cloudflare-like text for unrelated status codes', () => {
+    expect(
+      isCloudflareWafResponse(
+        401,
+        '<html><body>Cloudflare challenge</body></html>',
+        'text/html; charset=utf-8'
+      )
+    ).toBe(false)
   })
 })
